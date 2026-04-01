@@ -3,7 +3,6 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
 import {
-  Alert,
   FlatList,
   Modal,
   Platform,
@@ -28,20 +27,16 @@ export default function ProfileScreen() {
   const { readings } = useReadings();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const [langModalVisible, setLangModalVisible] = useState(false);
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
   const handleLogout = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: t('cancel'), style: 'cancel' },
-      {
-        text: t('logout'),
-        style: 'destructive',
-        onPress: async () => {
-          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          await logout();
-          // Navigation is handled by the tabs layout useEffect watching user state
-        },
-      },
-    ]);
+    setLogoutModalVisible(true);
+  };
+
+  const confirmLogout = async () => {
+    setLogoutModalVisible(false);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await logout();
   };
 
   const currentLang = ALL_LANGUAGES.find(l => l.code === language);
@@ -144,6 +139,42 @@ export default function ProfileScreen() {
         </Animated.View>
       </ScrollView>
 
+      {/* Sign Out Confirmation Modal */}
+      <Modal
+        visible={logoutModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLogoutModalVisible(false)}
+      >
+        <Pressable style={styles.logoutModalOverlay} onPress={() => setLogoutModalVisible(false)}>
+          <View style={styles.logoutModal}>
+            <LinearGradient colors={['#1A0D35', '#251350']} style={styles.logoutModalInner}>
+              <View style={styles.logoutModalIcon}>
+                <Ionicons name="log-out-outline" size={32} color={Colors.dark.error} />
+              </View>
+              <Text style={styles.logoutModalTitle}>Sign Out</Text>
+              <Text style={styles.logoutModalMsg}>Are you sure you want to sign out of HastRekha?</Text>
+              <View style={styles.logoutModalButtons}>
+                <Pressable
+                  style={({ pressed }) => [styles.logoutModalCancel, pressed && styles.pressed]}
+                  onPress={() => setLogoutModalVisible(false)}
+                  accessibilityLabel="Cancel sign out"
+                >
+                  <Text style={styles.logoutModalCancelText}>{t('cancel')}</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [styles.logoutModalConfirm, pressed && styles.pressed]}
+                  onPress={confirmLogout}
+                  accessibilityLabel="Confirm sign out"
+                >
+                  <Text style={styles.logoutModalConfirmText}>{t('logout')}</Text>
+                </Pressable>
+              </View>
+            </LinearGradient>
+          </View>
+        </Pressable>
+      </Modal>
+
       {/* Language Picker Modal */}
       <Modal
         visible={langModalVisible}
@@ -242,6 +273,17 @@ const styles = StyleSheet.create({
   logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: 'rgba(232,85,85,0.10)', paddingVertical: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(232,85,85,0.25)' },
   logoutText: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: Colors.dark.error },
   pressed: { opacity: 0.8 },
+  logoutModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', alignItems: 'center', justifyContent: 'center', padding: 32 },
+  logoutModal: { width: '100%', maxWidth: 340 },
+  logoutModalInner: { width: '100%', maxWidth: 340, borderRadius: 24, padding: 28, alignItems: 'center', gap: 12, borderWidth: 1, borderColor: Colors.dark.border },
+  logoutModalIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(232,85,85,0.12)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(232,85,85,0.25)', marginBottom: 4 },
+  logoutModalTitle: { fontSize: 22, fontFamily: 'Inter_700Bold', color: Colors.dark.text },
+  logoutModalMsg: { fontSize: 14, fontFamily: 'Inter_400Regular', color: Colors.dark.textSecondary, textAlign: 'center', lineHeight: 22 },
+  logoutModalButtons: { flexDirection: 'row', gap: 12, marginTop: 8, width: '100%' },
+  logoutModalCancel: { flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: Colors.dark.card, borderWidth: 1, borderColor: Colors.dark.border },
+  logoutModalCancelText: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: Colors.dark.textSecondary },
+  logoutModalConfirm: { flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: 'rgba(232,85,85,0.15)', borderWidth: 1, borderColor: 'rgba(232,85,85,0.4)' },
+  logoutModalConfirmText: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: Colors.dark.error },
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
   modalSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, overflow: 'hidden' },

@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     await AsyncStorage.removeItem('user');
     setUser(null);
-    router.replace('/');
+    setTimeout(() => router.replace('/'), 50);
   }, []);
 
   const updateProfile = useCallback(async (data: Partial<User>) => {

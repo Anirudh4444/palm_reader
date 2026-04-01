@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
-import { Redirect, Tabs } from 'expo-router';
+import { Tabs } from 'expo-router';
 import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
 import React from 'react';
 import { Platform, StyleSheet, View, useColorScheme } from 'react-native';
@@ -91,8 +91,7 @@ function ClassicTabLayout() {
 export default function TabLayout() {
   const { user, isLoading } = useAuth();
 
-  if (isLoading) return null;
-  if (!user) return <Redirect href="/" />;
+  if (isLoading || !user) return null;
 
   const tabs = isLiquidGlassAvailable() ? <NativeTabLayout /> : <ClassicTabLayout />;
 
