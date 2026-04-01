@@ -14,6 +14,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AuthProvider } from '@/context/AuthContext';
+import { CreditProvider } from '@/context/CreditContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { ReadingsProvider } from '@/context/ReadingsContext';
 
@@ -45,14 +46,17 @@ export default function RootLayout() {
             <LanguageProvider>
               <AuthProvider>
                 <ReadingsProvider>
-                  <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#0A0415' } }}>
-                    <Stack.Screen name="index" />
-                    <Stack.Screen name="(auth)" options={{ presentation: 'modal', headerShown: false }} />
-                    <Stack.Screen name="(tabs)" />
-                    <Stack.Screen name="reading/[id]" />
-                    <Stack.Screen name="scan" />
-                    <Stack.Screen name="chat/[readingId]" />
-                  </Stack>
+                  <CreditProvider>
+                    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#0A0415' } }}>
+                      <Stack.Screen name="index" />
+                      <Stack.Screen name="(auth)" options={{ presentation: 'modal', headerShown: false }} />
+                      <Stack.Screen name="(tabs)" />
+                      <Stack.Screen name="reading/[id]" />
+                      <Stack.Screen name="scan" />
+                      <Stack.Screen name="chat/[readingId]" />
+                      <Stack.Screen name="payment" options={{ presentation: 'modal', headerShown: false }} />
+                    </Stack>
+                  </CreditProvider>
                 </ReadingsProvider>
               </AuthProvider>
             </LanguageProvider>

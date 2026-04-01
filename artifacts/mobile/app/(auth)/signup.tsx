@@ -5,7 +5,9 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  FlatList,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -19,7 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '@/constants/colors';
 import { useAuth } from '@/context/AuthContext';
-import { useLanguage } from '@/context/LanguageContext';
+import { ALL_LANGUAGES, useLanguage } from '@/context/LanguageContext';
 
 export default function SignupScreen() {
   const insets = useSafeAreaInsets();
@@ -33,6 +35,9 @@ export default function SignupScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showLangModal, setShowLangModal] = useState(false);
+
+  const selectedLang = ALL_LANGUAGES.find(l => l.code === language) ?? ALL_LANGUAGES[0];
 
   const handleSignup = async () => {
     if (!name.trim() || !email.trim() || !password.trim()) {
@@ -69,13 +74,14 @@ export default function SignupScreen() {
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(150)} style={styles.langRow}>
-            {(['en', 'hi', 'te'] as const).map(lang => (
-              <Pressable key={lang} onPress={() => setLanguage(lang)} style={[styles.langBtn, language === lang && styles.langBtnActive]}>
-                <Text style={[styles.langBtnText, language === lang && styles.langBtnTextActive]}>
-                  {lang === 'en' ? 'EN' : lang === 'hi' ? 'हि' : 'తె'}
-                </Text>
-              </Pressable>
-            ))}
+            <Pressable
+              style={styles.langPickerBtn}
+              onPress={() => setShowLangModal(true)}
+            >
+              <Text style={styles.langFlag}>{selectedLang.flag}</Text>
+              <Text style={styles.langNative}>{selectedLang.native}</Text>
+              <Ionicons name="chevron-down" size={14} color={Colors.dark.gold} />
+            </Pressable>
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(200).springify()} style={styles.header}>
@@ -160,6 +166,44 @@ export default function SignupScreen() {
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal visible={showLangModal} animationType="slide" transparent onRequestClose={() => setShowLangModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{t('chooseLang')}</Text>
+              <Pressable onPress={() => setShowLangModal(false)} style={styles.modalClose}>
+                <Ionicons name="close" size={22} color={Colors.dark.textSecondary} />
+              </Pressable>
+            </View>
+            <Text style={styles.modalSubtitle}>{t('selectLangSubtitle')}</Text>
+            <FlatList
+              data={ALL_LANGUAGES}
+              keyExtractor={item => item.code}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.langList}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={[styles.langItem, language === item.code && styles.langItemActive]}
+                  onPress={() => {
+                    setLanguage(item.code);
+                    setShowLangModal(false);
+                  }}
+                >
+                  <Text style={styles.langItemFlag}>{item.flag}</Text>
+                  <View style={styles.langItemText}>
+                    <Text style={[styles.langItemNative, language === item.code && styles.langItemNativeActive]}>{item.native}</Text>
+                    <Text style={styles.langItemEnglish}>{item.english}</Text>
+                  </View>
+                  {language === item.code && (
+                    <Ionicons name="checkmark-circle" size={20} color={Colors.dark.gold} />
+                  )}
+                </Pressable>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -172,11 +216,14 @@ const styles = StyleSheet.create({
   orb1: { width: 250, height: 250, top: -60, right: -60, backgroundColor: 'rgba(123,63,219,0.12)' },
   orb2: { width: 180, height: 180, bottom: 80, left: -50, backgroundColor: 'rgba(201,144,42,0.10)' },
   backBtn: { width: 44, height: 44, justifyContent: 'center', marginBottom: 8 },
-  langRow: { flexDirection: 'row', gap: 8, marginBottom: 24 },
-  langBtn: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: Colors.dark.borderLight },
-  langBtnActive: { backgroundColor: Colors.dark.accentDim, borderColor: Colors.dark.gold },
-  langBtnText: { fontSize: 13, fontFamily: 'Inter_500Medium', color: Colors.dark.textTertiary },
-  langBtnTextActive: { color: Colors.dark.gold },
+  langRow: { marginBottom: 20 },
+  langPickerBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start',
+    backgroundColor: Colors.dark.accentDim, borderWidth: 1, borderColor: Colors.dark.gold,
+    borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8,
+  },
+  langFlag: { fontSize: 18 },
+  langNative: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: Colors.dark.gold },
   header: { alignItems: 'center', marginBottom: 32 },
   emoji: { fontSize: 48, marginBottom: 16 },
   title: { fontSize: 30, fontFamily: 'Inter_700Bold', color: Colors.dark.text, marginBottom: 8 },
@@ -204,4 +251,25 @@ const styles = StyleSheet.create({
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 28 },
   footerText: { fontSize: 14, fontFamily: 'Inter_400Regular', color: Colors.dark.textSecondary },
   footerLink: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: Colors.dark.gold },
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.7)' },
+  modalSheet: {
+    backgroundColor: '#12082A', borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    maxHeight: '80%', paddingTop: 16,
+  },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingBottom: 4 },
+  modalTitle: { flex: 1, fontSize: 20, fontFamily: 'Inter_700Bold', color: Colors.dark.text },
+  modalClose: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  modalSubtitle: { fontSize: 13, fontFamily: 'Inter_400Regular', color: Colors.dark.textSecondary, paddingHorizontal: 24, paddingBottom: 12 },
+  langList: { paddingHorizontal: 16, paddingBottom: 40 },
+  langItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingVertical: 12, paddingHorizontal: 12,
+    borderRadius: 14, marginBottom: 4,
+  },
+  langItemActive: { backgroundColor: 'rgba(201,144,42,0.12)', borderWidth: 1, borderColor: 'rgba(201,144,42,0.3)' },
+  langItemFlag: { fontSize: 26 },
+  langItemText: { flex: 1 },
+  langItemNative: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: Colors.dark.text },
+  langItemNativeActive: { color: Colors.dark.gold },
+  langItemEnglish: { fontSize: 12, fontFamily: 'Inter_400Regular', color: Colors.dark.textTertiary },
 });

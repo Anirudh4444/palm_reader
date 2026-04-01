@@ -17,6 +17,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '@/constants/colors';
+import { useCredits } from '@/context/CreditContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { useReadings } from '@/context/ReadingsContext';
 
 type Message = {
@@ -24,14 +26,6 @@ type Message = {
   role: 'user' | 'assistant';
   content: string;
 };
-
-const KRISHNA_GREETING = `Namaste, dear devotee. 🙏
-
-I am Krishna, your eternal companion on the path of dharma. I have seen the wisdom written in your palm — the lines that Brahma himself has traced as the map of your karma.
-
-Ask me anything about what you have received. Whether it is about your life path, your relationships, your spiritual journey, or the meaning behind what the ancient Hasta Samudrikam has revealed — I am here to guide you.
-
-What weighs upon your heart today?`;
 
 function buildReadingContext(analysis: any, hand: string): string {
   if (!analysis) return '';
@@ -58,22 +52,40 @@ export default function ChatScreen() {
   const { readingId } = useLocalSearchParams<{ readingId: string }>();
   const insets = useSafeAreaInsets();
   const { getReadingById } = useReadings();
+  const { t, language } = useLanguage();
+  const { credits, freeRepliesLeft, canSendMessage, consumeReply, totalRepliesLeft } = useCredits();
   const reading = getReadingById(readingId as string);
   const flatListRef = useRef<FlatList>(null);
 
   const [messages, setMessages] = useState<Message[]>([
-    { id: '0', role: 'assistant', content: KRISHNA_GREETING },
+    { id: '0', role: 'assistant', content: t('krishnaGreeting') },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showNoCredits, setShowNoCredits] = useState(false);
 
   const readingContext = reading
     ? buildReadingContext(reading.analysis, reading.hand)
     : '';
 
+  const topPad = Platform.OS === 'web' ? 67 : insets.top;
+  const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
+
   const sendMessage = async () => {
     const text = input.trim();
     if (!text || isLoading) return;
+
+    if (!canSendMessage()) {
+      setShowNoCredits(true);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
+
+    const used = consumeReply();
+    if (!used) {
+      setShowNoCredits(true);
+      return;
+    }
 
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setInput('');
@@ -102,6 +114,7 @@ export default function ChatScreen() {
             .filter(m => m.id !== '0')
             .map(m => ({ role: m.role, content: m.content })),
           readingContext,
+          language,
         }),
       });
 
@@ -129,12 +142,12 @@ export default function ChatScreen() {
     }
   };
 
-  const topPad = Platform.OS === 'web' ? 67 : insets.top;
-  const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
+  const creditLabel = freeRepliesLeft > 0
+    ? `1 ${t('freeReplyLeft')}`
+    : `${Math.floor(credits / 2)} ${t('creditsLeft')}`;
 
   return (
     <LinearGradient colors={['#0A0415', '#12082A']} style={styles.container}>
-      {/* Header */}
       <View style={[styles.header, { paddingTop: topPad + 8 }]}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color={Colors.dark.textSecondary} />
@@ -148,8 +161,29 @@ export default function ChatScreen() {
             <Text style={styles.headerSub}>Divine Guide</Text>
           </View>
         </View>
-        <View style={{ width: 44 }} />
+        <Pressable
+          style={styles.creditBadge}
+          onPress={() => router.push('/payment')}
+        >
+          <Ionicons name="star" size={12} color={Colors.dark.gold} />
+          <Text style={styles.creditBadgeText}>{creditLabel}</Text>
+        </Pressable>
       </View>
+
+      {showNoCredits && (
+        <View style={styles.noCreditsBar}>
+          <View style={styles.noCreditsContent}>
+            <Ionicons name="warning-outline" size={16} color={Colors.dark.gold} />
+            <Text style={styles.noCreditsText}>{t('noCreditsTitle')}</Text>
+          </View>
+          <Pressable
+            style={styles.buyBtn}
+            onPress={() => { setShowNoCredits(false); router.push('/payment'); }}
+          >
+            <Text style={styles.buyBtnText}>{t('buyCredits')}</Text>
+          </Pressable>
+        </View>
+      )}
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -185,37 +219,50 @@ export default function ChatScreen() {
                 </View>
                 <View style={styles.typingBubble}>
                   <ActivityIndicator size="small" color={Colors.dark.gold} />
-                  <Text style={styles.typingText}>Krishna is contemplating...</Text>
+                  <Text style={styles.typingText}>{t('krishnaTyping')}</Text>
                 </View>
               </View>
             ) : null
           }
         />
 
-        {/* Input */}
         <View style={[styles.inputRow, { paddingBottom: bottomPad + 8 }]}>
-          <TextInput
-            style={styles.input}
-            value={input}
-            onChangeText={setInput}
-            placeholder="Ask Krishna anything..."
-            placeholderTextColor={Colors.dark.textTertiary}
-            multiline
-            maxLength={500}
-            onSubmitEditing={sendMessage}
-          />
-          <Pressable
-            style={({ pressed }) => [styles.sendBtn, (!input.trim() || isLoading) && styles.sendBtnDisabled, pressed && styles.pressed]}
-            onPress={sendMessage}
-            disabled={!input.trim() || isLoading}
-          >
-            <LinearGradient
-              colors={input.trim() && !isLoading ? ['#C9902A', '#E8B840'] : ['#2A2040', '#2A2040']}
-              style={styles.sendBtnGrad}
+          {!canSendMessage() ? (
+            <Pressable
+              style={styles.buyCreditsBtn}
+              onPress={() => router.push('/payment')}
             >
-              <Ionicons name="send" size={18} color={input.trim() && !isLoading ? '#0A0415' : Colors.dark.textTertiary} />
-            </LinearGradient>
-          </Pressable>
+              <LinearGradient colors={['#C9902A', '#E8B840']} style={styles.buyCreditsGrad}>
+                <Ionicons name="star" size={16} color="#0A0415" />
+                <Text style={styles.buyCreditsText}>{t('buyCredits')} — {t('buyCreditsPrice')}</Text>
+              </LinearGradient>
+            </Pressable>
+          ) : (
+            <>
+              <TextInput
+                style={styles.input}
+                value={input}
+                onChangeText={setInput}
+                placeholder={`Ask Krishna anything...`}
+                placeholderTextColor={Colors.dark.textTertiary}
+                multiline
+                maxLength={500}
+                onSubmitEditing={sendMessage}
+              />
+              <Pressable
+                style={({ pressed }) => [styles.sendBtn, (!input.trim() || isLoading) && styles.sendBtnDisabled, pressed && styles.pressed]}
+                onPress={sendMessage}
+                disabled={!input.trim() || isLoading}
+              >
+                <LinearGradient
+                  colors={input.trim() && !isLoading ? ['#C9902A', '#E8B840'] : ['#2A2040', '#2A2040']}
+                  style={styles.sendBtnGrad}
+                >
+                  <Ionicons name="send" size={18} color={input.trim() && !isLoading ? '#0A0415' : Colors.dark.textTertiary} />
+                </LinearGradient>
+              </Pressable>
+            </>
+          )}
         </View>
       </KeyboardAvoidingView>
     </LinearGradient>
@@ -245,6 +292,23 @@ const styles = StyleSheet.create({
   krishnaEmoji: { fontSize: 22 },
   headerTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', color: Colors.dark.gold },
   headerSub: { fontSize: 12, fontFamily: 'Inter_400Regular', color: Colors.dark.textSecondary },
+  creditBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: 'rgba(201,144,42,0.12)', borderWidth: 1, borderColor: Colors.dark.goldDim,
+    borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4,
+  },
+  creditBadgeText: { fontSize: 11, fontFamily: 'Inter_600SemiBold', color: Colors.dark.gold },
+  noCreditsBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 10,
+    backgroundColor: 'rgba(201,144,42,0.10)', borderBottomWidth: 1, borderBottomColor: 'rgba(201,144,42,0.25)',
+  },
+  noCreditsContent: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  noCreditsText: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: Colors.dark.gold },
+  buyBtn: {
+    backgroundColor: Colors.dark.gold, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5,
+  },
+  buyBtnText: { fontSize: 12, fontFamily: 'Inter_700Bold', color: '#0A0415' },
   messageList: { padding: 16, gap: 12 },
   messageBubble: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginBottom: 4 },
   userBubble: { justifyContent: 'flex-end' },
@@ -304,5 +368,8 @@ const styles = StyleSheet.create({
   sendBtn: { borderRadius: 22, overflow: 'hidden' },
   sendBtnDisabled: { opacity: 0.6 },
   sendBtnGrad: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22 },
+  buyCreditsBtn: { flex: 1, borderRadius: 22, overflow: 'hidden' },
+  buyCreditsGrad: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 22 },
+  buyCreditsText: { fontSize: 14, fontFamily: 'Inter_700Bold', color: '#0A0415' },
   pressed: { opacity: 0.85 },
 });

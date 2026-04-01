@@ -25,12 +25,21 @@ import { useReadings } from '@/context/ReadingsContext';
 
 export default function ScanScreen() {
   const insets = useSafeAreaInsets();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user } = useAuth();
   const { addReading } = useReadings();
   const [imageUri, setImageUri] = useState<string | null>(null);
-  const [hand, setHand] = useState<'left' | 'right'>('right');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  const gender = (user as any)?.gender ?? '';
+  const suggestedHand: 'left' | 'right' = gender === 'female' ? 'left' : 'right';
+  const [hand, setHand] = useState<'left' | 'right'>(suggestedHand);
+
+  const handSuggestion = gender === 'female'
+    ? t('handSuggestionFemale')
+    : gender === 'male'
+    ? t('handSuggestionMale')
+    : t('handSuggestionOther');
 
   const pickImage = async (source: 'camera' | 'gallery') => {
     let result;
@@ -85,7 +94,7 @@ export default function ScanScreen() {
           hand,
           dob: user.dob,
           name: user.name,
-          language: 'en',
+          language,
         }),
       });
 
@@ -149,6 +158,21 @@ export default function ScanScreen() {
               <Text style={styles.handEmoji}>✋</Text>
               <Text style={[styles.handBtnText, hand === 'right' && styles.handBtnTextActive]}>{t('right')}</Text>
             </Pressable>
+          </View>
+
+          <View style={styles.suggestionCard}>
+            <View style={styles.suggestionHeader}>
+              <Ionicons name="sparkles" size={14} color={Colors.dark.gold} />
+              <Text style={styles.suggestionTitle}>{t('handSuggestionTitle')}</Text>
+            </View>
+            <Text style={styles.suggestionText}>{handSuggestion}</Text>
+            {gender !== '' && (
+              <Text style={styles.suggestionHint}>
+                {hand === suggestedHand
+                  ? `✓ Suggested hand selected`
+                  : `Suggested: ${suggestedHand === 'left' ? t('left') : t('right')}`}
+              </Text>
+            )}
           </View>
         </Animated.View>
 
@@ -229,12 +253,20 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14, fontFamily: 'Inter_400Regular', color: Colors.dark.textSecondary, lineHeight: 20 },
   sectionLabel: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: Colors.dark.textSecondary, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 12 },
   handSection: { marginBottom: 28 },
-  handRow: { flexDirection: 'row', gap: 12 },
+  handRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
   handBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 16, borderWidth: 1, borderColor: Colors.dark.border, backgroundColor: Colors.dark.card },
   handBtnActive: { backgroundColor: Colors.dark.accentDim, borderColor: Colors.dark.gold },
   handEmoji: { fontSize: 22 },
   handBtnText: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: Colors.dark.textTertiary },
   handBtnTextActive: { color: Colors.dark.gold },
+  suggestionCard: {
+    backgroundColor: 'rgba(201,144,42,0.08)', borderRadius: 14, padding: 14,
+    borderWidth: 1, borderColor: 'rgba(201,144,42,0.2)', gap: 6,
+  },
+  suggestionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  suggestionTitle: { fontSize: 12, fontFamily: 'Inter_700Bold', color: Colors.dark.gold, letterSpacing: 0.5, textTransform: 'uppercase' },
+  suggestionText: { fontSize: 13, fontFamily: 'Inter_400Regular', color: Colors.dark.textSecondary, lineHeight: 20 },
+  suggestionHint: { fontSize: 12, fontFamily: 'Inter_600SemiBold', color: Colors.dark.gold },
   imageSection: { marginBottom: 24 },
   imagePreview: { borderRadius: 24, overflow: 'hidden', position: 'relative', borderWidth: 1, borderColor: Colors.dark.borderLight },
   palmImage: { width: '100%', aspectRatio: 1, borderRadius: 24 },

@@ -25,18 +25,31 @@ Embody Krishna's divine qualities:
 
 Remember: you see the devotee's soul, not just their palm. You speak from eternal wisdom.`;
 
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: 'English', hi: 'Hindi', te: 'Telugu', bn: 'Bengali', ta: 'Tamil',
+  kn: 'Kannada', ml: 'Malayalam', mr: 'Marathi', gu: 'Gujarati', pa: 'Punjabi',
+  or: 'Odia', as: 'Assamese', ur: 'Urdu', mai: 'Maithili', sd: 'Sindhi',
+  kok: 'Konkani', mni: 'Manipuri', sa: 'Sanskrit', doi: 'Dogri', ks: 'Kashmiri',
+  ne: 'Nepali', sat: 'Santali', bo: 'Bodo',
+};
+
 router.post('/chat', async (req, res) => {
   try {
-    const { messages, readingContext } = req.body;
+    const { messages, readingContext, language } = req.body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       res.status(400).json({ error: 'Messages are required' });
       return;
     }
 
+    const langName = language && LANGUAGE_NAMES[language] ? LANGUAGE_NAMES[language] : 'English';
+    const languageInstruction = langName !== 'English'
+      ? `\n\nIMPORTANT: You must respond entirely in ${langName}. Maintain your divine Krishna persona but speak in ${langName} throughout. Sanskrit terms may remain in Sanskrit with ${langName} explanations.`
+      : '';
+
     const systemContent = readingContext
-      ? `${KRISHNA_SYSTEM_PROMPT}\n\nContext from this devotee's palm reading:\n${readingContext}`
-      : KRISHNA_SYSTEM_PROMPT;
+      ? `${KRISHNA_SYSTEM_PROMPT}${languageInstruction}\n\nContext from this devotee's palm reading:\n${readingContext}`
+      : `${KRISHNA_SYSTEM_PROMPT}${languageInstruction}`;
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
