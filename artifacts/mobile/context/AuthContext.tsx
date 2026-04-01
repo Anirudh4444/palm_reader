@@ -47,6 +47,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     try {
+      if (logoutTimerRef.current) { clearTimeout(logoutTimerRef.current); logoutTimerRef.current = null; }
+      setIsLoggingOut(false);
       const usersData = await AsyncStorage.getItem('users');
       const users: (User & { password: string })[] = usersData ? JSON.parse(usersData) : [];
       const found = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
@@ -64,6 +66,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signup = useCallback(async (name: string, email: string, password: string, dob?: string, gender?: string) => {
     try {
+      if (logoutTimerRef.current) { clearTimeout(logoutTimerRef.current); logoutTimerRef.current = null; }
+      setIsLoggingOut(false);
       const usersData = await AsyncStorage.getItem('users');
       const users: (User & { password: string })[] = usersData ? JSON.parse(usersData) : [];
       const exists = users.find(u => u.email.toLowerCase() === email.toLowerCase());
