@@ -1,6 +1,7 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dimensions, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeIn,
@@ -10,24 +11,27 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '@/constants/colors';
-import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 
 const { width, height } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
-  const { user, isLoading, isLoggingOut } = useAuth();
   const { t } = useLanguage();
+  const [checking, setChecking] = useState(true);
+  const [mountKey] = useState(() => Date.now().toString());
 
   useEffect(() => {
-    if (!isLoading && user && !isLoggingOut) {
-      router.replace('/(tabs)');
-    }
-  }, [user, isLoading, isLoggingOut]);
+    AsyncStorage.getItem('user').then(stored => {
+      if (stored) {
+        router.replace('/(tabs)');
+      } else {
+        setChecking(false);
+      }
+    });
+  }, []);
 
-  if (isLoading) return null;
-  if (user && !isLoggingOut) return null;
+  if (checking) return null;
 
   const topPad = Platform.OS === 'web' ? 80 : (insets.top + 40);
   const bottomPad = Platform.OS === 'web' ? 50 : (insets.bottom + 40);
@@ -42,6 +46,7 @@ export default function WelcomeScreen() {
       <View style={[styles.orb, styles.orb3]} />
 
       <ScrollView
+        key={mountKey}
         contentContainerStyle={[styles.scrollContent, { paddingTop: topPad, paddingBottom: bottomPad }]}
         showsVerticalScrollIndicator={false}
       >

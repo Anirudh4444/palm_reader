@@ -13,7 +13,6 @@ type User = {
 type AuthContextType = {
   user: User | null;
   isLoading: boolean;
-  isLoggingOut: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (name: string, email: string, password: string, dob?: string, gender?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
@@ -25,7 +24,6 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const logoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -48,7 +46,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     try {
       if (logoutTimerRef.current) { clearTimeout(logoutTimerRef.current); logoutTimerRef.current = null; }
-      setIsLoggingOut(false);
       const usersData = await AsyncStorage.getItem('users');
       const users: (User & { password: string })[] = usersData ? JSON.parse(usersData) : [];
       const found = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
@@ -67,7 +64,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signup = useCallback(async (name: string, email: string, password: string, dob?: string, gender?: string) => {
     try {
       if (logoutTimerRef.current) { clearTimeout(logoutTimerRef.current); logoutTimerRef.current = null; }
-      setIsLoggingOut(false);
       const usersData = await AsyncStorage.getItem('users');
       const users: (User & { password: string })[] = usersData ? JSON.parse(usersData) : [];
       const exists = users.find(u => u.email.toLowerCase() === email.toLowerCase());
@@ -95,11 +91,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     await AsyncStorage.removeItem('user');
-    setIsLoggingOut(true);
     router.replace('/');
     logoutTimerRef.current = setTimeout(() => {
       setUser(null);
-      setIsLoggingOut(false);
     }, 300);
   }, []);
 
@@ -120,7 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, isLoggingOut, login, signup, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, isLoading, login, signup, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
