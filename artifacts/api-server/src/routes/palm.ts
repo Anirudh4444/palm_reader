@@ -8,6 +8,14 @@ const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
 });
 
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: 'English', hi: 'Hindi', te: 'Telugu', bn: 'Bengali', ta: 'Tamil',
+  kn: 'Kannada', ml: 'Malayalam', mr: 'Marathi', gu: 'Gujarati', pa: 'Punjabi',
+  or: 'Odia', as: 'Assamese', ur: 'Urdu', mai: 'Maithili', sd: 'Sindhi',
+  kok: 'Konkani', mni: 'Manipuri', sa: 'Sanskrit', doi: 'Dogri', ks: 'Kashmiri',
+  ne: 'Nepali', sat: 'Santali', bo: 'Bodo',
+};
+
 router.post('/analyze', async (req, res) => {
   try {
     const { image, hand, dob, name, language } = req.body;
@@ -16,6 +24,11 @@ router.post('/analyze', async (req, res) => {
       res.status(400).json({ error: 'Image is required' });
       return;
     }
+
+    const langName = language && LANGUAGE_NAMES[language] ? LANGUAGE_NAMES[language] : 'English';
+    const langInstruction = langName !== 'English'
+      ? `\n\nCRITICAL: Write ALL text values in ${langName}. The JSON keys must stay in English exactly as specified, but every string value in the JSON must be written entirely in ${langName}. Do not mix languages in the values.`
+      : '';
 
     const systemPrompt = `You are an expert in Indian palmistry (Hasta Samudrikam), Vedic astrology, and Hindu mythology. 
 You analyze palm images with deep knowledge of:
@@ -32,7 +45,7 @@ Always provide readings that are:
 - Specific to the visible features in the palm image
 - Culturally respectful of Indian heritage
 
-Respond ONLY with a valid JSON object. No other text.`;
+Respond ONLY with a valid JSON object. No other text.${langInstruction}`;
 
     const handDescription = hand === 'left' ? 'left hand (passive/birth karma)' : 'right hand (active/current karma)';
     const dobInfo = dob ? `Date of birth: ${dob}.` : '';

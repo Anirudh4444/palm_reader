@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
-type User = {
+export type User = {
   id: string;
   name: string;
   email: string;
@@ -20,6 +20,11 @@ type AuthContextType = {
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
+
+function getApiBase(): string {
+  const domain = process.env.EXPO_PUBLIC_DOMAIN ?? '';
+  return domain ? `https://${domain}/api` : '/api';
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -46,46 +51,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     try {
       if (logoutTimerRef.current) { clearTimeout(logoutTimerRef.current); logoutTimerRef.current = null; }
-      const usersData = await AsyncStorage.getItem('users');
-      const users: (User & { password: string })[] = usersData ? JSON.parse(usersData) : [];
-      const found = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
-      if (!found) {
-        return { success: false, error: 'Invalid email or password' };
+
+      const response = await fetch(`${getApiBase()}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: data.error ?? 'Invalid email or password' };
       }
-      const { password: _, ...userData } = found;
+
+      const userData: User = data.user;
       await AsyncStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       return { success: true };
     } catch (e) {
-      return { success: false, error: 'Login failed. Please try again.' };
+      return { success: false, error: 'Login failed. Please check your connection and try again.' };
     }
   }, []);
 
   const signup = useCallback(async (name: string, email: string, password: string, dob?: string, gender?: string) => {
     try {
       if (logoutTimerRef.current) { clearTimeout(logoutTimerRef.current); logoutTimerRef.current = null; }
-      const usersData = await AsyncStorage.getItem('users');
-      const users: (User & { password: string })[] = usersData ? JSON.parse(usersData) : [];
-      const exists = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-      if (exists) {
-        return { success: false, error: 'An account with this email already exists' };
+
+      const response = await fetch(`${getApiBase()}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), email: email.trim(), password, dob, gender }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: data.error ?? 'Signup failed. Please try again.' };
       }
-      const newUser: User & { password: string } = {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        name,
-        email,
-        password,
-        dob,
-        gender,
-      };
-      users.push(newUser);
-      await AsyncStorage.setItem('users', JSON.stringify(users));
-      const { password: _, ...userData } = newUser;
+
+      const userData: User = data.user;
       await AsyncStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       return { success: true };
     } catch (e) {
-      return { success: false, error: 'Signup failed. Please try again.' };
+      return { success: false, error: 'Signup failed. Please check your connection and try again.' };
     }
   }, []);
 
@@ -100,17 +109,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateProfile = useCallback(async (data: Partial<User>) => {
     if (!user) return;
     const updated = { ...user, ...data };
+
+    try {
+      await fetch(`${getApiBase()}/auth/profile`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, ...data }),
+      });
+    } catch (e) {
+      console.error('Profile update error:', e);
+    }
+
     await AsyncStorage.setItem('user', JSON.stringify(updated));
     setUser(updated);
-    const usersData = await AsyncStorage.getItem('users');
-    if (usersData) {
-      const users: (User & { password: string })[] = JSON.parse(usersData);
-      const idx = users.findIndex(u => u.id === user.id);
-      if (idx >= 0) {
-        users[idx] = { ...users[idx], ...data };
-        await AsyncStorage.setItem('users', JSON.stringify(users));
-      }
-    }
   }, [user]);
 
   return (
