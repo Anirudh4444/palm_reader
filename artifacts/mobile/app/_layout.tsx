@@ -41,11 +41,11 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView style={{ flex: 1 }}>
+          <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#0A0415' }}>
             <LanguageProvider>
               <AuthProvider>
                 <ReadingsProvider>
-                  <Stack screenOptions={{ headerShown: false }}>
+                  <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#0A0415' } }}>
                     <Stack.Screen name="index" />
                     <Stack.Screen name="(auth)" options={{ presentation: 'modal', headerShown: false }} />
                     <Stack.Screen name="(tabs)" />

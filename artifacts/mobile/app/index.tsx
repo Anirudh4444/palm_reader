@@ -17,17 +17,17 @@ const { width, height } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isLoggingOut } = useAuth();
   const { t } = useLanguage();
 
   useEffect(() => {
-    if (!isLoading && user) {
+    if (!isLoading && user && !isLoggingOut) {
       router.replace('/(tabs)');
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, isLoggingOut]);
 
   if (isLoading) return null;
-  if (user) return null;
+  if (user && !isLoggingOut) return null;
 
   const topPad = Platform.OS === 'web' ? 80 : (insets.top + 40);
   const bottomPad = Platform.OS === 'web' ? 50 : (insets.bottom + 40);

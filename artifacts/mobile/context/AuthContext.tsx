@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
 type User = {
   id: string;
@@ -13,6 +13,7 @@ type User = {
 type AuthContextType = {
   user: User | null;
   isLoading: boolean;
+  isLoggingOut: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (name: string, email: string, password: string, dob?: string, gender?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
@@ -24,6 +25,8 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const logoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     loadUser();
@@ -88,8 +91,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     await AsyncStorage.removeItem('user');
-    setUser(null);
-    setTimeout(() => router.replace('/'), 50);
+    setIsLoggingOut(true);
+    router.replace('/');
+    logoutTimerRef.current = setTimeout(() => {
+      setUser(null);
+      setIsLoggingOut(false);
+    }, 300);
   }, []);
 
   const updateProfile = useCallback(async (data: Partial<User>) => {
@@ -109,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, signup, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, isLoading, isLoggingOut, login, signup, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
