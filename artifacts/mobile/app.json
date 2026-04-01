@@ -1,0 +1,65 @@
+{
+  "expo": {
+    "name": "JindagikiRekha",
+    "slug": "jindagikirekha",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "jindagikirekha",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0415"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.jindagikirekha.app",
+      "buildNumber": "1"
+    },
+    "android": {
+      "package": "com.jindagikirekha.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#0A0415"
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/images/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "HastRekha needs access to your photos to read your palm.",
+          "cameraPermission": "HastRekha needs camera access to photograph your palm for reading."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "hastrekha-palm-reading"
+      }
+    }
+  }
+}
