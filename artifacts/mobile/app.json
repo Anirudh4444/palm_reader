@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "jindagikirekha",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
@@ -43,18 +42,23 @@
         }
       ],
       "expo-font",
-      "expo-web-browser",
       [
         "expo-image-picker",
         {
           "photosPermission": "HastRekha needs access to your photos to read your palm.",
           "cameraPermission": "HastRekha needs camera access to photograph your palm for reading."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#E8B840"
+        }
       ]
     ],
     "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
+      "typedRoutes": true
     },
     "extra": {
       "eas": {
