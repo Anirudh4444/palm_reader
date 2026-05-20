@@ -1,0 +1,78 @@
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  useFonts,
+} from '@expo-google-fonts/inter';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import * as Notifications from 'expo-notifications';
+import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import React, { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { AuthProvider } from '@/context/AuthContext';
+import { CreditProvider } from '@/context/CreditContext';
+import { LanguageProvider } from '@/context/LanguageContext';
+import { ReadingsProvider } from '@/context/ReadingsContext';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
+
+SplashScreen.preventAutoHideAsync();
+
+const queryClient = new QueryClient();
+
+export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError]);
+
+  if (!fontsLoaded && !fontError) return null;
+
+  return (
+    <SafeAreaProvider>
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#0A0415' }}>
+            <LanguageProvider>
+              <AuthProvider>
+                <ReadingsProvider>
+                  <CreditProvider>
+                    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#0A0415' } }}>
+                      <Stack.Screen name="index" />
+                      <Stack.Screen name="(auth)" options={{ presentation: 'modal', headerShown: false }} />
+                      <Stack.Screen name="(tabs)" />
+                      <Stack.Screen name="reading/[id]" />
+                      <Stack.Screen name="scan" />
+                      <Stack.Screen name="chat/[readingId]" />
+                      <Stack.Screen name="payment" options={{ presentation: 'modal', headerShown: false }} />
+                    </Stack>
+                  </CreditProvider>
+                </ReadingsProvider>
+              </AuthProvider>
+            </LanguageProvider>
+          </GestureHandlerRootView>
+        </QueryClientProvider>
+      </ErrorBoundary>
+    </SafeAreaProvider>
+  );
+}

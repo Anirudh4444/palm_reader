@@ -1,0 +1,19 @@
+[
+  {
+    "id": "1775023506918pgc7jacgl",
+    "name": "Test User",
+    "email": "test_unique_1@hastrekha.com",
+    "passwordHash": "fiq8xb",
+    "dob": "01/01/1990",
+    "gender": "female",
+    "createdAt": "2026-04-01T06:05:06.918Z"
+  },
+  {
+    "id": "177502361459368rgqs0s6",
+    "name": "Arjuna Dev",
+    "email": "arjuna1775023527393@hastrekha.com",
+    "passwordHash": "jdd0qd",
+    "gender": "male",
+    "createdAt": "2026-04-01T06:06:54.593Z"
+  }
+]
